@@ -12,30 +12,16 @@ from simulate import Game
 from naive import NaivePlayer
 from deep import DeepPlayer
 
-try:
-    with open('best_player.dat','rb') as f:
-        best_net = pickle.load(f)
-except:
-    best_net = None
-STEP = 100
-BASE = STEP
-threshold = 22
-
-def mse(A):
-    return map(lambda x: x**2, A)
-
 def eval_genomes(genomes, config):
-    global best_net
-    global BASE
-    global threshold
-    global STEP
     count = 0
     for genome_id, genome in genomes:
         net = neat.nn.FeedForwardNetwork.create(genome, config)
-        if not best_net:
-            players = [NaivePlayer() for _ in range(3)]
-        else:
-            players = [DeepPlayer(best_net) for _ in range(3)]
+        #if not best_net:
+        #    players = [NaivePlayer() for _ in range(3)]
+        #else:
+        #    players = [DeepPlayer(best_net) for _ in range(3)]
+
+        players = [NaivePlayer() for _ in range(3)]
         players.append(DeepPlayer(net))
         
         scores = []
@@ -50,19 +36,20 @@ def eval_genomes(genomes, config):
             score = G.get_score()
             scores.append(score[-1])
 
-        # Highest possible squared score is 26**2 = 676
-        sq = mse(scores)
-        mean_score = float(sum(scores))/len(scores)
-        normalized_mean_score = mean_score*26 / 676
-        print("Game", count)
-        count += 1
-        genome.fitness = 26 - mean_score + BASE
+        #print(scores)
+        sq = map(lambda x: x**2, scores)
+        mean_score = sum(sq)*1.0/len(sq)
 
-        if genome.fitness > BASE + threshold:
-            BASE += STEP
-            best_net = net
-            with open('best_player.dat','wb') as f:
-                pickle.dump(best_net, f)
+        print("Genome", count)
+        count += 1
+        print(676 - mean_score)
+        genome.fitness = 676 - mean_score
+
+        #if genome.fitness > BASE + threshold:
+        #    BASE += STEP
+        #    best_net = net
+        #    with open('best_player.dat','wb') as f:
+        #        pickle.dump(best_net, f)
 
 def run(config_file):
 
@@ -87,6 +74,8 @@ def run(config_file):
     winner = p.run(eval_genomes, 300)
     
     winner_net = neat.nn.FeedForwardNetwork.create(winner, config)
+    with open('best_player.dat', 'wb') as f:
+        pickle.dump(winner_net, f)
 
 if __name__ == '__main__':
     # Determine path to configuration file. This path manipulation is
